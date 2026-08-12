@@ -444,12 +444,19 @@ export class ConfigService {
     return this.env[key] as T;
   }
 
+  private getServerPort(): number {
+    const port = process.env.PORT || process.env.SERVER_PORT;
+    const parsedPort = Number(port);
+
+    return Number.isSafeInteger(parsedPort) && parsedPort > 0 && parsedPort <= 65535 ? parsedPort : 8080;
+  }
+
   private loadEnv() {
     this.env = this.envProcess();
     this.env.PRODUCTION = process.env?.NODE_ENV === 'PROD';
     if (process.env?.DOCKER_ENV === 'true') {
       this.env.SERVER.TYPE = process.env.SERVER_TYPE as 'http' | 'http';
-      this.env.SERVER.PORT = Number.parseInt(process.env.SERVER_PORT) || 8080;
+      this.env.SERVER.PORT = this.getServerPort();
     }
   }
 
@@ -458,7 +465,7 @@ export class ConfigService {
       SERVER: {
         NAME: process.env?.SERVER_NAME || 'evolution',
         TYPE: (process.env.SERVER_TYPE as 'http' | 'https') || 'http',
-        PORT: Number.parseInt(process.env.SERVER_PORT) || 8080,
+        PORT: this.getServerPort(),
         URL: process.env.SERVER_URL,
         DISABLE_DOCS: process.env?.SERVER_DISABLE_DOCS === 'true',
         DISABLE_MANAGER: process.env?.SERVER_DISABLE_MANAGER === 'true',

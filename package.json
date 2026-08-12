@@ -5,6 +5,7 @@
   "main": "./dist/main.js",
   "type": "commonjs",
   "scripts": {
+    "prebuild": "npm run db:generate",
     "build": "tsc --noEmit && tsup",
     "start": "tsx ./src/main.ts",
     "start:prod": "node dist/main",
