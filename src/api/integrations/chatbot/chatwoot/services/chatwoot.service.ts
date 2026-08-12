@@ -21,6 +21,7 @@ import ChatwootClient, {
 import { request as chatwootRequest } from '@figuro/chatwoot-sdk/dist/core/request';
 import { Chatwoot as ChatwootModel, Contact as ContactModel, Message as MessageModel } from '@prisma/client';
 import i18next from '@utils/i18n';
+import { prismaJsonFilter } from '@utils/prismaJsonFilter';
 import { sendTelemetry } from '@utils/sendTelemetry';
 import axios from 'axios';
 import { WAMessageContent, WAMessageKey } from 'baileys';
@@ -1545,10 +1546,7 @@ export class ChatwootService {
         if (chatwootRead) {
           const lastMessage = await this.prismaRepository.message.findFirst({
             where: {
-              key: {
-                path: ['fromMe'],
-                equals: false,
-              },
+              key: prismaJsonFilter(['fromMe'], { equals: false }),
               instanceId: instance.instanceId,
             },
           });
@@ -1575,10 +1573,7 @@ export class ChatwootService {
             await this.prismaRepository.message.updateMany({
               where: {
                 instanceId: instance.instanceId,
-                key: {
-                  path: ['id'],
-                  equals: key.id,
-                },
+                key: prismaJsonFilter(['id'], { equals: key.id }),
               },
               data: updateMessage,
             });
@@ -2024,10 +2019,7 @@ export class ChatwootService {
         if (quotedId)
           quotedMsg = await this.prismaRepository.message.findFirst({
             where: {
-              key: {
-                path: ['id'],
-                equals: quotedId,
-              },
+              key: prismaJsonFilter(['id'], { equals: quotedId }),
               chatwootMessageId: {
                 not: null,
               },
@@ -2336,10 +2328,7 @@ export class ChatwootService {
           if (message?.chatwootMessageId && message?.chatwootConversationId) {
             await this.prismaRepository.message.deleteMany({
               where: {
-                key: {
-                  path: ['id'],
-                  equals: body.key.id,
-                },
+                key: prismaJsonFilter(['id'], { equals: body.key.id }),
                 instanceId: instance.instanceId,
               },
             });
@@ -2679,7 +2668,7 @@ export class ChatwootService {
         where: {
           Instance: { name: instance.instanceName },
           messageTimestamp: { gte: Number(dayjs().subtract(6, 'hours').unix()) },
-          AND: ids.map((id) => ({ key: { path: ['id'], not: id } })),
+          AND: ids.map((id) => ({ key: prismaJsonFilter(['id'], { not: id }) })),
         },
       });
 

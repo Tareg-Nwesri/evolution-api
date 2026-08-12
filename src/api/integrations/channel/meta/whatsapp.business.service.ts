@@ -23,6 +23,7 @@ import { Events, wa } from '@api/types/wa.types';
 import { AudioConverter, Chatwoot, ConfigService, Database, Openai, S3, WaBusiness } from '@config/env.config';
 import { BadRequestException, InternalServerErrorException } from '@exceptions';
 import { createJid } from '@utils/createJid';
+import { prismaJsonFilter } from '@utils/prismaJsonFilter';
 import { status } from '@utils/renderStatus';
 import { sendTelemetry } from '@utils/sendTelemetry';
 import axios from 'axios';
@@ -757,10 +758,7 @@ export class BusinessStartupService extends ChannelStartupService {
             const findMessage = await this.prismaRepository.message.findFirst({
               where: {
                 instanceId: this.instanceId,
-                key: {
-                  path: ['id'],
-                  equals: key.id,
-                },
+                key: prismaJsonFilter(['id'], { equals: key.id }),
               },
             });
 

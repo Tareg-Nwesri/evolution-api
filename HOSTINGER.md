@@ -28,11 +28,25 @@ Do not use bare `npx prisma generate`: repository has no `prisma/schema.prisma`.
 
 ## Database bootstrap
 
-Schema migration/bootstrap is separate from build and startup. Apply approved migrations against target database before first deployment; build/start does not run migrations automatically.
+Schema migration/bootstrap is separate from build and startup. Back up database, then apply production migrations with `DATABASE_PROVIDER=mysql npm run db:deploy`; never use `db:migrate:dev` in production.
+
+Before `20260812000001_restore_label_unique_index`, check duplicates:
+
+```sql
+SELECT `labelId`, `instanceId`, COUNT(*) AS `count`
+FROM `Label`
+WHERE `labelId` IS NOT NULL
+GROUP BY `labelId`, `instanceId`
+HAVING COUNT(*) > 1;
+```
+
+`20260812000000_restore_is_on_whatsapp_lid` restores nullable `IsOnWhatsapp.lid`; `20260812000001_restore_label_unique_index` restores `Label_labelId_instanceId_key`. Cleanup requires operator retention/merge decision; migrations never delete data. If index migration fails, Prisma marks it failed: clean duplicates, run `npx prisma migrate resolve --rolled-back 20260812000001_restore_label_unique_index --schema ./prisma/mysql-schema.prisma`, then rerun `DATABASE_PROVIDER=mysql npm run db:deploy`. Already manually present `lid` or index can conflict; resolve schema and Prisma migration state with DBA before continuing.
 
 ## Shared-hosting limitation
 
 Web Apps sleep after inactivity. They are unreliable for persistent Baileys connections, WebSockets, workers, and local session files. Use Hostinger VPS for production Evolution API workloads.
+
+Some MySQL runtime paths still use provider-specific raw SQL; MySQL support requires workload-specific verification.
 
 ## Prisma troubleshooting
 

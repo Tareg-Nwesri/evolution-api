@@ -445,10 +445,12 @@ export class ConfigService {
   }
 
   private getServerPort(): number {
-    const port = process.env.PORT || process.env.SERVER_PORT;
-    const parsedPort = Number(port);
+    const validPort = (port: string | undefined) => {
+      const parsedPort = Number(port);
+      return Number.isSafeInteger(parsedPort) && parsedPort > 0 && parsedPort <= 65535 ? parsedPort : undefined;
+    };
 
-    return Number.isSafeInteger(parsedPort) && parsedPort > 0 && parsedPort <= 65535 ? parsedPort : 8080;
+    return validPort(process.env.PORT) ?? validPort(process.env.SERVER_PORT) ?? 8080;
   }
 
   private loadEnv() {
