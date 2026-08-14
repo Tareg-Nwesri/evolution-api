@@ -6,11 +6,19 @@ Use Hostinger Web Apps with these hPanel values:
 | --- | --- |
 | Node.js version | `22` |
 | Project/root directory | Repository root (directory containing `package.json`) |
-| Build command | `npm run build` |
+| Build script | `hostinger:build` |
 | Output directory | `dist` |
 | Entry file | `dist/main.js` |
 
-Hostinger installs dependencies and runs build automatically. Do not manually run `npm run dev`, `npm run build`, or Prisma generation. `npm run build` runs `prebuild`, which runs existing provider-aware `npm run db:generate` before TypeScript/tsup build.
+Build script is package-script selector: enter `hostinger:build`, not arbitrary shell command. Hostinger installs dependencies and runs it automatically. Do not manually run `npm run dev`, `npm run build`, or Prisma generation.
+
+`hostinger:build` runs this production sequence:
+
+1. `npm run db:deploy` applies provider-specific production migrations.
+2. `npm run build` triggers `prebuild`, which runs provider-aware `npm run db:generate`.
+3. `build` runs TypeScript validation and tsup, producing `dist`.
+
+Migration failure blocks deployment. Resolve migration failure from Hostinger build logs; do not bypass it.
 
 ## Environment variables
 
@@ -22,13 +30,15 @@ Set in hPanel:
 - `SERVER_URL=https://your-domain.example`
 - `CORS_ORIGIN=https://your-domain.example`
 
+`DATABASE_PROVIDER=mysql` and `DATABASE_CONNECTION_URI` must be available during build, not only at runtime.
+
 For Hostinger MySQL, `DATABASE_CONNECTION_URI` hostname must be database host shown in hPanel, not `localhost`, `127.0.0.1`, or Docker service name. Hostinger supplies `PORT`; do not set it. Runtime uses `PORT`, then `SERVER_PORT`, then `8080`.
 
 Do not use bare `npx prisma generate`: repository has no `prisma/schema.prisma`. Build selects `prisma/mysql-schema.prisma` from `DATABASE_PROVIDER`.
 
-## Database bootstrap
+## Database bootstrap and safeguards
 
-Schema migration/bootstrap is separate from build and startup. Back up database, then apply production migrations with `DATABASE_PROVIDER=mysql npm run db:deploy`; never use `db:migrate:dev` in production.
+`hostinger:build` runs production migrations before application build. For fresh MySQL database, migrations create `Instance` and remaining application tables. For non-empty database, back it up before deployment and check duplicate labels before migration below. Never use `db:migrate:dev` or `db push` in production.
 
 Before `20260812000001_restore_label_unique_index`, check duplicates:
 
